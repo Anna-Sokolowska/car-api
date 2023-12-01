@@ -15,7 +15,8 @@ class CarController extends Controller
 {
     public function __construct(
         public CarService $carService
-    ) {}
+    ) {
+    }
 
     public function index(ListCarRequest $request): ResourceCollection
     {
@@ -40,17 +41,19 @@ class CarController extends Controller
 
     public function destroy(Car $car): JsonResponse
     {
-        if ($this->carService->delete($car))
-            return response()->json(null,204);
-        else
-            return response()->json('Server error',500);
-    }
-    public function destroyByType(string $type): JsonResponse
-    {
-        if ($this->carService->deleteFirstByType($type))
-            return response()->json(null,204);
-        else
-            return response()->json('Server error',500);
+        if ($this->carService->delete($car)) {
+            return response()->json(null, 204);
+        } else {
+            return response()->json('Server error', 500);
+        }
     }
 
+    public function destroyByType(string $type): JsonResponse
+    {
+        if ($this->carService->deleteFirstByType($type)) {
+            return response()->json(null, 204);
+        } else {
+            return response()->json('Server error', 500);
+        }
+    }
 }
