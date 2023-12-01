@@ -2,56 +2,55 @@
 
 namespace App\Http\Controllers;
 
-use App\Casts\Lowercase;
-use App\Casts\Uppercase;
-use App\Http\Requests\DestroyCarRequest;
 use App\Http\Requests\ListCarRequest;
 use App\Http\Requests\StoreCarRequest;
 use App\Http\Requests\UpdateCarRequest;
+use App\Http\Resources\CarResource;
 use App\Models\Car;
+use App\Services\CarService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\ResourceCollection;
 
 class CarController extends Controller
 {
-    public function index(ListCarRequest $request)
+    public function __construct(
+        public CarService $carService
+    ) {}
+
+    public function index(ListCarRequest $request): ResourceCollection
     {
-        return Car::query()
-            ->when($request->type, function ($query) use ($request){
-                $query->where('type', $request->type);
-            })
-            ->when($request->limit, function ($query) use ($request){
-                $query->limit($request->limit);
-            })
-            ->when($request->name_format, function ($query) use ($request){
-                if ($request->name_format == 'uppercase')
-                    $query->withCasts(['name' => Uppercase::class]);
-                elseif ($request->name_format == 'lowercase')
-                    $query->withCasts(['name' => Lowercase::class]);
-            })
-            ->paginate(5);
+        return CarResource::collection(
+            $this->carService->listWithFilter($request)
+        );
     }
 
-    public function show(Car $car)
+    public function store(StoreCarRequest $request): CarResource
     {
-        //
+        $car = $this->carService->create($request->validated());
+
+        return new CarResource($car);
     }
 
-    public function store(StoreCarRequest $request)
+    public function update(UpdateCarRequest $request, Car $car): CarResource
     {
-        $car = $request->validated();
+        $car = $this->carService->update($car, $request->validated());
 
-        return Car::create($car);
+        return new CarResource($car);
     }
 
-    public function update(UpdateCarRequest $request, Car $car)
+    public function destroy(Car $car): JsonResponse
     {
-        $validated = $request->validated();
-
-        return $car->update($validated);
+        if ($this->carService->delete($car))
+            return response()->json(null,204);
+        else
+            return response()->json('Server error',500);
     }
-
-    public function destroy(DestroyCarRequest $request, Car $car)
+    public function destroyByType(string $type): JsonResponse
     {
-        return $car->delete();
+        if ($this->carService->deleteFirstByType($type))
+            return response()->json(null,204);
+        else
+            return response()->json('Server error',500);
     }
 
 }
